@@ -14,6 +14,14 @@ vi.mock('../src/pdf-extractor', () => ({
   PdfMetadataExtractor: vi.fn(function () { return { extract: mockExtract }; }),
 }));
 
+const mockEmailExtract = vi.hoisted(() =>
+  vi.fn().mockResolvedValue({ subject: '', from: '', date: null })
+);
+
+vi.mock('../src/email-extractor', () => ({
+  EmailMetadataExtractor: vi.fn(function () { return { extract: mockEmailExtract }; }),
+}));
+
 function makeTFile(props: {
   path: string;
   extension: string;
@@ -55,6 +63,34 @@ function makeApp(options: {
 }
 
 const defaults: AttachmentsLibrarySettings = { ...DEFAULT_SETTINGS };
+
+describe('SidecarManager email support', () => {
+  it('uses eml headers for title, author and created', async () => {
+    mockEmailExtract.mockResolvedValueOnce({ subject: 'Hello', from: 'Jane', date: '2024-03-05' });
+    const app = makeApp();
+    const sm = new SidecarManager(app as any, { ...defaults });
+    await sm.createSidecar(makeTFile({ path: 'Attachments/m.eml', extension: 'eml' }));
+    const content = app.vault.create.mock.calls[0][1] as string;
+    expect(content).toContain('Hello');
+    expect(content).toContain('Jane');
+    expect(content).toContain('2024-03-05');
+    expect(content).toContain('_heuristic: true');
+  });
+
+  it('falls back to basename when eml has no headers', async () => {
+    const app = makeApp();
+    const sm = new SidecarManager(app as any, { ...defaults });
+    await sm.createSidecar(makeTFile({ path: 'Attachments/m.eml', extension: 'eml', basename: 'm' }));
+    expect(app.vault.create.mock.calls[0][1]).toContain('title: "m"');
+  });
+
+  it('does not run the email extractor for msg files', async () => {
+    mockEmailExtract.mockClear();
+    const sm = new SidecarManager(makeApp() as any, { ...defaults });
+    await sm.createSidecar(makeTFile({ path: 'Attachments/m.msg', extension: 'msg' }));
+    expect(mockEmailExtract).not.toHaveBeenCalled();
+  });
+});
 
 describe('SidecarManager', () => {
   beforeEach(() => {

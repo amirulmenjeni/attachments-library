@@ -1,15 +1,18 @@
 import { App, TFile, normalizePath } from 'obsidian';
 import { AttachmentsLibrarySettings, AttachmentMetadata, DEFAULT_METADATA } from './types';
 import { PdfMetadataExtractor } from './pdf-extractor';
+import { EmailMetadataExtractor } from './email-extractor';
 
 export class SidecarManager {
   private pdfExtractor: PdfMetadataExtractor;
+  private emailExtractor: EmailMetadataExtractor;
 
   constructor(
     private app: App,
     private settings: AttachmentsLibrarySettings
   ) {
     this.pdfExtractor = new PdfMetadataExtractor(app);
+    this.emailExtractor = new EmailMetadataExtractor(app);
   }
 
   getSidecarPath(attachmentPath: string): string {
@@ -60,6 +63,13 @@ export class SidecarManager {
       if (extracted.author) { metadata.author = extracted.author; metadata._heuristic = true; }
       if (extracted.subject) metadata.subject = extracted.subject;
       if (extracted.keywords.length > 0) metadata.tags = extracted.keywords;
+    }
+
+    if (attachmentFile.extension === "eml") {
+      const email = await this.emailExtractor.extract(attachmentFile);
+      if (email.subject) { metadata.title = email.subject; metadata._heuristic = true; }
+      if (email.from) { metadata.author = email.from; metadata._heuristic = true; }
+      if (email.date) metadata.created = email.date;
     }
 
     if (!metadata.title) {
