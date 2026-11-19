@@ -133,19 +133,20 @@ function createTab(plugin: any) {
 // [2]  attachmentsFolder        (text)
 // [3]  libraryFolder            (text)
 // [4]  mirrorFolderStructure    (toggle)
-// [5]  baseFolderPath           (text + button "Mover")
-// [6]  sections.behavior        (setHeading)
-// [7]  autoCreateOnNew          (toggle)
-// [8]  autoDeleteOnRemove       (toggle)
-// [9]  sections.tagsProperty    (setHeading)
-// [10] tagsPropertyName         (text)
-// [11] renameProperty           (text + button)
-// [12] sanitizeTags             (button)
-// [13] sections.pdfMetadata     (setHeading)
-// [14] enablePdfMetadataExtraction (toggle)
-// [15] enableDoiIsbnLookup      (toggle)
-// [16] sections.actions         (setHeading)
-// [17] backfill                 (button)
+// [5]  watchedExtensions        (text)
+// [6]  baseFolderPath           (text + button "Mover")
+// [7]  sections.behavior        (setHeading)
+// [8]  autoCreateOnNew          (toggle)
+// [9]  autoDeleteOnRemove       (toggle)
+// [10]  sections.tagsProperty    (setHeading)
+// [11] tagsPropertyName         (text)
+// [12] renameProperty           (text + button)
+// [13] sanitizeTags             (button)
+// [14] sections.pdfMetadata     (setHeading)
+// [15] enablePdfMetadataExtraction (toggle)
+// [16] enableDoiIsbnLookup      (toggle)
+// [17] sections.actions         (setHeading)
+// [18] backfill                 (button)
 
 describe('AttachmentsLibrarySettingsTab', () => {
   beforeEach(() => {
@@ -155,7 +156,7 @@ describe('AttachmentsLibrarySettingsTab', () => {
   it('creates the expected number of settings', () => {
     const plugin = makePlugin();
     createTab(plugin);
-    expect(settingInstances).toHaveLength(18);
+    expect(settingInstances).toHaveLength(19);
   });
 
   // ─── attachmentsFolder ────────────────────────────────────────────────────
@@ -208,13 +209,25 @@ describe('AttachmentsLibrarySettingsTab', () => {
     });
   });
 
+  // ─── watchedExtensions ────────────────────────────────────────────────────
+
+  describe('watchedExtensions onChange', () => {
+    it('normalizes, lowercases, dedupes and saves', async () => {
+      const plugin = makePlugin();
+      createTab(plugin);
+      await settingInstances[5]._textCbs[0]('EML, .msg  pdf;.pdf, .');
+      expect(plugin.settings.watchedExtensions).toEqual(['.eml', '.msg', '.pdf']);
+      expect(plugin.saveSettings).toHaveBeenCalled();
+    });
+  });
+
   // ─── baseFolderPath ───────────────────────────────────────────────────────
 
   describe('baseFolderPath (Mover button)', () => {
     it('text onChange updates pending value but does not save', () => {
       const plugin = makePlugin({ baseFolderPath: '' });
       createTab(plugin);
-      settingInstances[5]._textCbs[0]('Databases');
+      settingInstances[6]._textCbs[0]('Databases');
       expect(plugin.saveSettings).not.toHaveBeenCalled();
       expect(plugin.settings.baseFolderPath).toBe('');
     });
@@ -223,8 +236,8 @@ describe('AttachmentsLibrarySettingsTab', () => {
       vi.useFakeTimers();
       const plugin = makePlugin({ baseFolderPath: '' });
       createTab(plugin);
-      settingInstances[5]._textCbs[0]('Databases');
-      settingInstances[5]._btnCbs[0]();
+      settingInstances[6]._textCbs[0]('Databases');
+      settingInstances[6]._btnCbs[0]();
       await Promise.resolve(); await Promise.resolve();
       expect(plugin.settings.baseFolderPath).toBe('Databases');
       expect(plugin.saveSettings).toHaveBeenCalled();
@@ -236,8 +249,8 @@ describe('AttachmentsLibrarySettingsTab', () => {
       vi.useFakeTimers();
       const plugin = makePlugin({ baseFolderPath: '' });
       createTab(plugin);
-      settingInstances[5]._textCbs[0]('  Databases  ');
-      settingInstances[5]._btnCbs[0]();
+      settingInstances[6]._textCbs[0]('  Databases  ');
+      settingInstances[6]._btnCbs[0]();
       await Promise.resolve(); await Promise.resolve();
       expect(plugin.settings.baseFolderPath).toBe('Databases');
       expect(plugin.moveBaseFile).toHaveBeenCalledWith('', 'Databases');
@@ -249,12 +262,12 @@ describe('AttachmentsLibrarySettingsTab', () => {
       const plugin = makePlugin({ baseFolderPath: '' });
       createTab(plugin);
       // First move: '' → 'Databases'
-      settingInstances[5]._textCbs[0]('Databases');
-      settingInstances[5]._btnCbs[0]();
+      settingInstances[6]._textCbs[0]('Databases');
+      settingInstances[6]._btnCbs[0]();
       await Promise.resolve(); await Promise.resolve();
       // Second move: 'Databases' → 'Archive'
-      settingInstances[5]._textCbs[0]('Archive');
-      settingInstances[5]._btnCbs[0]();
+      settingInstances[6]._textCbs[0]('Archive');
+      settingInstances[6]._btnCbs[0]();
       await Promise.resolve(); await Promise.resolve();
       expect(plugin.moveBaseFile).toHaveBeenNthCalledWith(2, 'Databases', 'Archive');
       vi.useRealTimers();
@@ -264,7 +277,7 @@ describe('AttachmentsLibrarySettingsTab', () => {
   // ─── baseFolderPath move conflict ─────────────────────────────────────────
   // The Modal mock calls onOpen() synchronously inside open(), so after the
   // move button click the confirm modal's Setting is available immediately at
-  // settingInstances[18] (btn[0] = Replace, btn[1] = Cancel).
+  // settingInstances[19] (btn[0] = Replace, btn[1] = Cancel).
 
   describe('baseFolderPath move conflict detection', () => {
     it('skips the modal and proceeds when no file exists at destination', async () => {
@@ -272,10 +285,10 @@ describe('AttachmentsLibrarySettingsTab', () => {
       const plugin = makePlugin({ baseFolderPath: '' });
       plugin.app.vault.getFileByPath = vi.fn().mockReturnValue(null);
       createTab(plugin);
-      settingInstances[5]._textCbs[0]('Databases');
-      settingInstances[5]._btnCbs[0]();
-      // No modal opened — settingInstances still has exactly 18 items
-      expect(settingInstances).toHaveLength(18);
+      settingInstances[6]._textCbs[0]('Databases');
+      settingInstances[6]._btnCbs[0]();
+      // No modal opened — settingInstances still has exactly 19 items
+      expect(settingInstances).toHaveLength(19);
       await Promise.resolve(); await Promise.resolve();
       expect(plugin.app.fileManager.trashFile).not.toHaveBeenCalled();
       expect(plugin.moveBaseFile).toHaveBeenCalledWith('', 'Databases');
@@ -287,10 +300,10 @@ describe('AttachmentsLibrarySettingsTab', () => {
       const plugin = makePlugin({ baseFolderPath: '' });
       plugin.app.vault.getFileByPath = vi.fn().mockReturnValue(existingFile);
       createTab(plugin);
-      settingInstances[5]._textCbs[0]('Databases');
-      settingInstances[5]._btnCbs[0]();
-      // Modal opened synchronously — its Setting is at index 18
-      expect(settingInstances).toHaveLength(19);
+      settingInstances[6]._textCbs[0]('Databases');
+      settingInstances[6]._btnCbs[0]();
+      // Modal opened synchronously — its Setting is at index 19
+      expect(settingInstances).toHaveLength(20);
     });
 
     it('aborts move when user clicks Cancel in the conflict modal', async () => {
@@ -298,10 +311,10 @@ describe('AttachmentsLibrarySettingsTab', () => {
       const plugin = makePlugin({ baseFolderPath: '' });
       plugin.app.vault.getFileByPath = vi.fn().mockReturnValue(existingFile);
       createTab(plugin);
-      settingInstances[5]._textCbs[0]('Databases');
-      settingInstances[5]._btnCbs[0]();
+      settingInstances[6]._textCbs[0]('Databases');
+      settingInstances[6]._btnCbs[0]();
       // Click Cancel (btn[1])
-      settingInstances[18]._btnCbs[1]();
+      settingInstances[19]._btnCbs[1]();
       await Promise.resolve(); await Promise.resolve();
       expect(plugin.app.fileManager.trashFile).not.toHaveBeenCalled();
       expect(plugin.moveBaseFile).not.toHaveBeenCalled();
@@ -313,14 +326,14 @@ describe('AttachmentsLibrarySettingsTab', () => {
       const plugin = makePlugin({ baseFolderPath: '' });
       plugin.app.vault.getFileByPath = vi.fn().mockReturnValue(existingFile);
       createTab(plugin);
-      settingInstances[5]._textCbs[0]('Databases');
-      settingInstances[5]._btnCbs[0]();
+      settingInstances[6]._textCbs[0]('Databases');
+      settingInstances[6]._btnCbs[0]();
       // Click Replace (btn[0]) — the async IIFE then needs 4 microtask ticks:
       // 1) IIFE resumes from await openConfirmModal
       // 2) await trashFile settles
       // 3) await saveSettings settles
       // 4) await moveBaseFile settles
-      settingInstances[18]._btnCbs[0]();
+      settingInstances[19]._btnCbs[0]();
       await Promise.resolve(); await Promise.resolve();
       await Promise.resolve(); await Promise.resolve();
       expect(plugin.app.fileManager.trashFile).toHaveBeenCalledWith(existingFile);
@@ -335,7 +348,7 @@ describe('AttachmentsLibrarySettingsTab', () => {
     it('saves the toggled value', async () => {
       const plugin = makePlugin();
       createTab(plugin);
-      await settingInstances[7]._toggleCbs[0](false);
+      await settingInstances[8]._toggleCbs[0](false);
       expect(plugin.settings.autoCreateOnNew).toBe(false);
       expect(plugin.saveSettings).toHaveBeenCalled();
     });
@@ -347,7 +360,7 @@ describe('AttachmentsLibrarySettingsTab', () => {
     it('saves the toggled value', async () => {
       const plugin = makePlugin();
       createTab(plugin);
-      await settingInstances[8]._toggleCbs[0](false);
+      await settingInstances[9]._toggleCbs[0](false);
       expect(plugin.settings.autoDeleteOnRemove).toBe(false);
       expect(plugin.saveSettings).toHaveBeenCalled();
     });
@@ -359,7 +372,7 @@ describe('AttachmentsLibrarySettingsTab', () => {
     it('trims and saves non-empty value', async () => {
       const plugin = makePlugin();
       createTab(plugin);
-      await settingInstances[10]._textCbs[0]('  keywords  ');
+      await settingInstances[11]._textCbs[0]('  keywords  ');
       expect(plugin.settings.tagsPropertyName).toBe('keywords');
       expect(plugin.saveSettings).toHaveBeenCalled();
     });
@@ -367,7 +380,7 @@ describe('AttachmentsLibrarySettingsTab', () => {
     it('defaults to "tags" when value is empty', async () => {
       const plugin = makePlugin();
       createTab(plugin);
-      await settingInstances[10]._textCbs[0]('');
+      await settingInstances[11]._textCbs[0]('');
       expect(plugin.settings.tagsPropertyName).toBe('tags');
     });
   });
@@ -378,7 +391,7 @@ describe('AttachmentsLibrarySettingsTab', () => {
     it('rename button does nothing when input is empty', async () => {
       const plugin = makePlugin();
       createTab(plugin);
-      settingInstances[11]._btnCbs[0]();
+      settingInstances[12]._btnCbs[0]();
       await Promise.resolve();
       expect(plugin.migrateTagsProperty).not.toHaveBeenCalled();
     });
@@ -388,8 +401,8 @@ describe('AttachmentsLibrarySettingsTab', () => {
       const plugin = makePlugin({ tagsPropertyName: 'tags' });
       createTab(plugin);
       // Set the input first via onChange
-      settingInstances[11]._textCbs[0]('old-name');
-      settingInstances[11]._btnCbs[0]();
+      settingInstances[12]._textCbs[0]('old-name');
+      settingInstances[12]._btnCbs[0]();
       await Promise.resolve(); await Promise.resolve();
       expect(plugin.migrateTagsProperty).toHaveBeenCalledWith('old-name', 'tags');
       vi.useRealTimers();
@@ -403,7 +416,7 @@ describe('AttachmentsLibrarySettingsTab', () => {
       vi.useFakeTimers();
       const plugin = makePlugin();
       createTab(plugin);
-      settingInstances[12]._btnCbs[0]();
+      settingInstances[13]._btnCbs[0]();
       await Promise.resolve(); await Promise.resolve();
       expect(plugin.sanitizeSidecarTags).toHaveBeenCalled();
       vi.useRealTimers();
@@ -416,7 +429,7 @@ describe('AttachmentsLibrarySettingsTab', () => {
     it('saves the toggled value', async () => {
       const plugin = makePlugin();
       createTab(plugin);
-      await settingInstances[14]._toggleCbs[0](false);
+      await settingInstances[15]._toggleCbs[0](false);
       expect(plugin.settings.enablePdfMetadataExtraction).toBe(false);
       expect(plugin.saveSettings).toHaveBeenCalled();
     });
@@ -428,7 +441,7 @@ describe('AttachmentsLibrarySettingsTab', () => {
     it('saves the toggled value', async () => {
       const plugin = makePlugin();
       createTab(plugin);
-      await settingInstances[15]._toggleCbs[0](true);
+      await settingInstances[16]._toggleCbs[0](true);
       expect(plugin.settings.enableDoiIsbnLookup).toBe(true);
       expect(plugin.saveSettings).toHaveBeenCalled();
     });
@@ -440,7 +453,7 @@ describe('AttachmentsLibrarySettingsTab', () => {
     it('calls runBackfill', () => {
       const plugin = makePlugin();
       createTab(plugin);
-      settingInstances[17]._btnCbs[0]();
+      settingInstances[18]._btnCbs[0]();
       expect(plugin.runBackfill).toHaveBeenCalled();
     });
   });

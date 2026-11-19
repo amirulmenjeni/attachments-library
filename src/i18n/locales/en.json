@@ -26,6 +26,11 @@
       "name": "Mirror subfolder structure",
       "desc": "When enabled, subfolders inside Attachments/ are replicated inside Library/."
     },
+    "watchedExtensions": {
+      "name": "Watched file extensions",
+      "desc": "Comma-separated list of file extensions to index (e.g. .pdf, .eml, .msg). Changes apply to new files; run Backfill to index existing ones.",
+      "placeholder": ".pdf, .eml, .msg"
+    },
     "baseFolder": {
       "name": "Base file folder (Bases)",
       "desc": "Folder where \"Attachments Library.base\" will be created. Leave blank for vault root. After changing, click \"Move\" to move the existing file.",

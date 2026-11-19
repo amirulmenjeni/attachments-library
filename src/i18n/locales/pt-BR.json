@@ -26,6 +26,11 @@
       "name": "Espelhar estrutura de subpastas",
       "desc": "Se ativo, subpastas dentro de Attachments/ são replicadas em Library/."
     },
+    "watchedExtensions": {
+      "name": "Extensões de arquivo monitoradas",
+      "desc": "Lista separada por vírgulas de extensões a indexar (ex.: .pdf, .eml, .msg). Alterações valem para novos arquivos; execute o Backfill para indexar os existentes.",
+      "placeholder": ".pdf, .eml, .msg"
+    },
     "baseFolder": {
       "name": "Pasta do arquivo base (Bases)",
       "desc": "Pasta onde o arquivo \"Attachments Library.base\" será criado. Deixe em branco para a raiz do vault. Após alterar, clique em \"Mover\" para mover o arquivo existente.",

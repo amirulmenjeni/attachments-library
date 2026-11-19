@@ -23,6 +23,15 @@ function openConfirmModal(app: App, message: string, confirmText: string, cancel
   });
 }
 
+export function parseExtensions(raw: string): string[] {
+  const exts = raw
+    .split(/[\s,;]+/)
+    .map(e => e.trim().toLowerCase())
+    .filter(e => e.length > 0 && e !== '.')
+    .map(e => (e.startsWith('.') ? e : '.' + e));
+  return [...new Set(exts)];
+}
+
 export class AttachmentsLibrarySettingsTab extends PluginSettingTab {
   constructor(app: App, private plugin: AttachmentsLibraryPlugin) {
     super(app, plugin);
@@ -65,6 +74,17 @@ export class AttachmentsLibrarySettingsTab extends PluginSettingTab {
         .setValue(this.plugin.settings.mirrorFolderStructure)
         .onChange(async (value) => {
           this.plugin.settings.mirrorFolderStructure = value;
+          await this.plugin.saveSettings();
+        }));
+
+    new Setting(containerEl)
+      .setName(t('settings.watchedExtensions.name'))
+      .setDesc(t('settings.watchedExtensions.desc'))
+      .addText(text => text
+        .setPlaceholder(t('settings.watchedExtensions.placeholder'))
+        .setValue(this.plugin.settings.watchedExtensions.join(', '))
+        .onChange(async (value) => {
+          this.plugin.settings.watchedExtensions = parseExtensions(value);
           await this.plugin.saveSettings();
         }));
 
